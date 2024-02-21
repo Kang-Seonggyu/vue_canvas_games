@@ -21,14 +21,26 @@ let TrexFrame = null;
 
 const canvas = ref();
 
+const dinoStand = new Image();
+const dinoLeft = new Image();
+const dinoRight = new Image();
+const dinoJump = new Image();
+const cactusImg = new Image();
+dinoLeft.src = '/src/assets/dino1.png';
+dinoRight.src = '/src/assets/dino2.png';
+dinoJump.src = '/src/assets/dinoJump.png';
+dinoStand.src = '/src/assets/dino0.png';
+cactusImg.src = '/src/assets/cactus.png';
+
 const createCanvas = () => {
   const ctx = canvas.value.getContext('2d');
 
   canvas.width = window.innerWidth - 100;
   canvas.height = window.innerHeight - 100;
 
-  const imgSet = new Image();
-  imgSet.src = '/src/assets/dino0.png';
+  const drawDino = (dino, img) => {
+    ctx.drawImage(img, 0, 0, 590, 686, dino.x, dino.y, dino.width, dino.height);
+  };
 
   const dino = {
     x: gameStats.positX,
@@ -36,19 +48,15 @@ const createCanvas = () => {
     width: 50,
     height: gameStats.charHeight,
     draw() {
-      ctx.fillStyle = 'brown';
-      // ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.drawImage(
-        imgSet,
-        0,
-        0,
-        590,
-        686,
-        this.x,
-        this.y,
-        this.width,
-        this.height
-      );
+      if (!gameStats.start) {
+        drawDino(this, dinoStand);
+      } else if (jumpState) {
+        drawDino(this, dinoJump);
+      } else if (timer % 10 < 5) {
+        drawDino(this, dinoLeft);
+      } else {
+        drawDino(this, dinoRight);
+      }
     },
   };
 
@@ -59,25 +67,25 @@ const createCanvas = () => {
       width: 25,
       height: gameStats.charHeight,
       draw() {
-        ctx.fillStyle = 'green';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        // ctx.drawImage(
-        //   imgSet,
-        //   2820,
-        //   0,
-        //   400,
-        //   700,
-        //   this.x,
-        //   this.y,
-        //   this.width,
-        //   this.height
-        // );
+        // ctx.fillStyle = 'green';
+        // ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.drawImage(
+          cactusImg,
+          0,
+          0,
+          369,
+          723,
+          this.x,
+          this.y,
+          this.width,
+          this.height
+        );
       },
     };
   };
 
   function updateCactuses() {
-    if (timer % 150 === 0) {
+    if (timer % 120 === 0) {
       const cactus = newCactus();
       cactusArr.push(cactus);
     }
@@ -132,18 +140,17 @@ const createCanvas = () => {
   }
 
   const collisionDetection = (dino, cactus) => {
-    let xValue = cactus.x - (dino.x + dino.width);
-    let yValue = cactus.y - (dino.y + dino.height);
-    if (xValue < 0 && yValue < 0) {
-      if (cactus.x + cactus.width > dino.x) {
-        alert('게임오버');
-        gameStats.start = false;
-        cancelAnimationFrame(TrexFrame);
-        jumpState = false;
-        timer = 0;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return -1;
-      }
+    const xValue1 = cactus.x - (dino.x + dino.width);
+    const xValue2 = cactus.x + cactus.width - dino.x;
+    const yValue = cactus.y - (dino.y + dino.height);
+    if (xValue1 < 0 && xValue2 > 0 && yValue < 0) {
+      alert('게임오버');
+      gameStats.start = false;
+      cancelAnimationFrame(TrexFrame);
+      jumpState = false;
+      timer = 0;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return -1;
     } else {
       return 1;
     }
@@ -163,7 +170,31 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-onMounted(() => {});
+onMounted(() => {
+  const ctx = canvas.value.getContext('2d');
+
+  dinoStand.onload = () => {
+    ctx.font = '48px serif';
+    ctx.fillText('Space Bar를 눌러 게임을 시작하세요.', 100, 100);
+
+    ctx.beginPath();
+    ctx.moveTo(20, gameStats.ground);
+    ctx.lineTo(1060, gameStats.ground);
+    ctx.stroke();
+
+    ctx.drawImage(
+      dinoStand,
+      0,
+      0,
+      590,
+      686,
+      gameStats.positX,
+      gameStats.ground - gameStats.charHeight,
+      50,
+      gameStats.charHeight
+    );
+  };
+});
 </script>
 
 <style scoped>

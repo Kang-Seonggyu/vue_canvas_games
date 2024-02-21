@@ -1,9 +1,9 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue';
+import DinoGame from './components/DinoGame.vue';
 </script>
 
 <template>
-  <HelloWorld msg="Vite + Vue" />
+  <DinoGame />
 </template>
 
 <style scoped>
