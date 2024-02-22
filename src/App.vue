@@ -1,22 +1,68 @@
-<script setup>
-import DinoGame from './components/DinoGame.vue';
-</script>
-
 <template>
-  <DinoGame />
+  <q-layout view="hHh lpR fFf">
+    <q-header elevated class="bg-primary text-white" height-hint="80">
+      <q-toolbar>
+        <q-toolbar-title>
+          <q-avatar>
+            <img src="/game.png" />
+          </q-avatar>
+          <span style="margin-left: 10px">Canvas Games</span>
+        </q-toolbar-title>
+      </q-toolbar>
+
+      <q-tabs align="justify">
+        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
+        <q-route-tab to="/" label="Home" />
+        <q-route-tab to="/DinoGame" label="DinoGame" />
+        <q-route-tab to="/MarioGame" label="MarioGame" />
+        <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
+      </q-tabs>
+    </q-header>
+
+    <q-drawer v-model="leftDrawerOpen" side="left" overlay elevated>
+      <!-- drawer content -->
+    </q-drawer>
+
+    <q-drawer
+      v-model="rightDrawerOpen"
+      side="right"
+      overlay
+      behavior="desktop"
+      elevated
+    >
+      <!-- drawer content -->
+    </q-drawer>
+
+    <q-page-container>
+      <router-view />
+    </q-page-container>
+
+    <q-footer elevated class="bg-grey-8 text-white">
+      <q-toolbar>
+        <q-toolbar-title>
+          <div>Title</div>
+        </q-toolbar-title>
+      </q-toolbar>
+    </q-footer>
+  </q-layout>
 </template>
 
+<script setup>
+import { ref } from 'vue';
+const leftDrawerOpen = ref(false);
+const rightDrawerOpen = ref(false);
+
+const toggleLeftDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+};
+
+const toggleRightDrawer = () => {
+  rightDrawerOpen.value = !rightDrawerOpen.value;
+};
+</script>
+
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+section {
+  flex: 1;
 }
 </style>
