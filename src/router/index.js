@@ -12,6 +12,11 @@ const routes = [
     component: () => import('../components/DinoGame.vue'),
   },
   {
+    path: '/BreakOutGame',
+    name: 'BreakOutGame',
+    component: () => import('../components/BreakOutGame.vue'),
+  },
+  {
     path: '/MarioGame',
     name: 'MarioGame',
     component: () => import('../components/MarioGame.vue'),
