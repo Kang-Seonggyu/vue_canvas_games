@@ -3,7 +3,6 @@
   <div class="gamePlace">
     <canvas ref="canvas" width="640" height="480"></canvas>
   </div>
-  <button @click="startGame">Play</button>
 </template>
 
 <script setup>
@@ -13,6 +12,37 @@ const canvas = ref();
 
 onMounted(() => {
   const ctx = canvas.value.getContext('2d');
+
+  let timer = 0;
+
+  // 게임 시작 전
+  let buttonColor = '#0095DD';
+
+  function drawStartBtn() {
+    ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+    ctx.fillStyle = buttonColor;
+    ctx.fillRect(120, 120, 400, 100);
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText('Game Start !', 270, 180);
+  }
+  drawStartBtn();
+
+  const gameStart = () => {
+    if (timer === 0) {
+      draw();
+    }
+  };
+
+  canvas.value.addEventListener('click', (e) => {
+    const rect = canvas.value.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (mouseX >= 120 && mouseX <= 520 && mouseY >= 120 && mouseY <= 220) {
+      gameStart();
+    }
+  });
 
   // 공
   const ballRadius = 10;
@@ -32,6 +62,7 @@ onMounted(() => {
   // 판자
   const paddleHeight = 10;
   const paddleWidth = 90;
+  const paddleOffset = 10;
   let paddleX = (canvas.value.width - paddleWidth) / 2;
   let rightPressed = false;
   let leftPressed = false;
@@ -39,7 +70,7 @@ onMounted(() => {
     ctx.beginPath();
     ctx.rect(
       paddleX,
-      canvas.value.height - paddleHeight,
+      canvas.value.height - paddleHeight - paddleOffset,
       paddleWidth,
       paddleHeight
     );
@@ -90,7 +121,7 @@ onMounted(() => {
 
   document.addEventListener('keydown', keyDownHandler, false);
   document.addEventListener('keyup', keyUpHandler, false);
-  document.addEventListener('mousemove', mouseMoveHandler, false);
+  canvas.value.addEventListener('mousemove', mouseMoveHandler, false);
 
   function keyDownHandler(e) {
     if (e.key === 'Right' || e.key === 'ArrowRight') {
@@ -110,9 +141,23 @@ onMounted(() => {
 
   function mouseMoveHandler(e) {
     const relativeX = e.clientX - canvas.value.offsetLeft;
+    const rect = canvas.value.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (mouseX >= 120 && mouseX <= 520 && mouseY >= 120 && mouseY <= 220) {
+      if (timer === 0) {
+        canvas.value.style.cursor = 'pointer';
+      }
+      buttonColor = '#0075BD';
+    } else {
+      canvas.value.style.cursor = 'default';
+      buttonColor = '#0095DD';
+    }
     if (relativeX > 0 && relativeX < canvas.value.width) {
       paddleX = relativeX - paddleWidth / 2;
     }
+    drawStartBtn();
   }
 
   function collisionDetection() {
@@ -120,20 +165,28 @@ onMounted(() => {
       for (let r = 0; r < brick.row; r++) {
         const b = bricks[c][r];
 
-        if (b.status === 1) {
+        // 깨지지 않은 벽돌의 경우 이벤트 실행
+        if (b.status >= 1) {
           if (
-            x > b.x &&
-            x < b.x + brick.width &&
-            y > b.y &&
-            y < b.y + brick.height
+            (x + ballRadius > b.x || x - ballRadius > b.x) &&
+            (x + ballRadius < b.x + brick.width ||
+              x - ballRadius < b.x + brick.width) &&
+            (y + ballRadius > b.y || y - ballRadius > b.y) &&
+            (y + ballRadius < b.y + brick.height ||
+              y - ballRadius < b.y + brick.height)
           ) {
+            console.log(
+              Math.abs(x - b.x),
+              Math.abs(x - (b.x + brick.width)),
+              Math.abs(y - b.y),
+              Math.abs(y - (b.y + brick.height))
+            );
             dy = -dy;
-            b.status = 0;
+            b.status -= 1;
             score++;
 
             if (score === brick.row * brick.col) {
               alert('You Win, Congraturations!');
-              clearInterval(interval);
             }
           }
         }
@@ -144,19 +197,16 @@ onMounted(() => {
   function drawScore() {
     ctx.font = '16px Arial';
     ctx.fillStyle = '#0095dd';
-    ctx.fillText(`Score : ${score}`, 8, 20);
+    ctx.fillText(`Score : ${score}`, 15, 25);
   }
   function drawLives() {
     ctx.font = '16px Arial';
     ctx.fillStyle = '#0095DD';
-    ctx.fillText(`Lives: ${lives}`, canvas.value.width - 65, 20);
-  }
-
-  function reload() {
-    document.location.reload();
+    ctx.fillText(`Lives: ${lives}`, canvas.value.width - 75, 25);
   }
 
   function draw() {
+    timer++;
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
 
     drawBall();
@@ -168,29 +218,33 @@ onMounted(() => {
     drawLives();
 
     if (
+      // 좌우측 벽
       x + dx > canvas.value.width - ballRadius / 2 ||
       x + dx < ballRadius / 2
     ) {
       dx = -dx;
     }
     if (y + dy < ballRadius / 2) {
+      // 상단측 벽
       dy = -dy;
-    } else if (y + dy > canvas.value.height - ballRadius / 2) {
+    } else if (
+      // 하단측 이벤트
+      y + dy >
+        canvas.value.height - paddleOffset - paddleHeight - ballRadius / 2 &&
+      y + dy < canvas.value.height - paddleOffset - ballRadius / 2
+    ) {
       if (x > paddleX && x < paddleX + paddleWidth) {
         dy = -dy;
+      }
+    } else if (y + dy > canvas.value.height - ballRadius / 2) {
+      lives--;
+      if (!lives) {
+        alert('GAME OVER');
+        document.location.reload();
       } else {
-        lives--;
-        if (!lives) {
-          alert('GAME OVER');
-          document.location.reload();
-          clearInterval(interval); // Needed for Chrome to end game
-        } else {
-          x = canvas.value.width / 2;
-          y = canvas.value.height - 30;
-          dx = 2;
-          dy = -2;
-          paddleX = (canvas.value.width - paddleWidth) / 2;
-        }
+        x = canvas.value.width / 2;
+        y = canvas.value.height - 30;
+        paddleX = (canvas.value.width - paddleWidth) / 2;
       }
     }
 
@@ -202,15 +256,16 @@ onMounted(() => {
 
     x += dx;
     y += dy;
+
+    const brickGame = requestAnimationFrame(draw);
   }
-
-  const interval = setInterval(draw, 8);
-
-  function startGame() {}
 });
 </script>
 
 <style scoped>
+h3 {
+  text-align: center;
+}
 .gamePlace {
   text-align: center;
 }
