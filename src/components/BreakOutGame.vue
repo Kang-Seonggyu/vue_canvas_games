@@ -30,7 +30,7 @@ onMounted(() => {
 
   const gameStart = () => {
     if (timer === 0) {
-      draw();
+      updateCanvas();
     }
   };
 
@@ -168,20 +168,25 @@ onMounted(() => {
         // 깨지지 않은 벽돌의 경우 이벤트 실행
         if (b.status >= 1) {
           if (
-            (x + ballRadius > b.x || x - ballRadius > b.x) &&
-            (x + ballRadius < b.x + brick.width ||
-              x - ballRadius < b.x + brick.width) &&
-            (y + ballRadius > b.y || y - ballRadius > b.y) &&
-            (y + ballRadius < b.y + brick.height ||
-              y - ballRadius < b.y + brick.height)
+            (x + ballRadius / 2 > b.x || x - ballRadius / 2 > b.x) &&
+            (x + ballRadius / 2 < b.x + brick.width ||
+              x - ballRadius / 2 < b.x + brick.width) &&
+            (y + ballRadius / 2 > b.y || y - ballRadius / 2 > b.y) &&
+            (y + ballRadius / 2 < b.y + brick.height ||
+              y - ballRadius / 2 < b.y + brick.height)
           ) {
-            console.log(
-              Math.abs(x - b.x),
-              Math.abs(x - (b.x + brick.width)),
-              Math.abs(y - b.y),
-              Math.abs(y - (b.y + brick.height))
-            );
-            dy = -dy;
+            if (
+              (x + ballRadius / 2 < b.x + dx && dx > 0) ||
+              (x - ballRadius / 2 > b.x + brick.width - dx && dx < 0)
+            ) {
+              dx = -dx;
+            }
+            if (
+              (y - ballRadius / 2 < b.y + brick.height - dy && dy < 0) ||
+              (y + ballRadius / 2 > b.y && dy > 0)
+            ) {
+              dy = -dy;
+            }
             b.status -= 1;
             score++;
 
@@ -192,30 +197,6 @@ onMounted(() => {
         }
       }
     }
-  }
-
-  function drawScore() {
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#0095dd';
-    ctx.fillText(`Score : ${score}`, 15, 25);
-  }
-  function drawLives() {
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#0095DD';
-    ctx.fillText(`Lives: ${lives}`, canvas.value.width - 75, 25);
-  }
-
-  function draw() {
-    timer++;
-    ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
-
-    drawBall();
-    drawBricks();
-    drawPaddle();
-
-    collisionDetection();
-    drawScore();
-    drawLives();
 
     if (
       // 좌우측 벽
@@ -245,6 +226,8 @@ onMounted(() => {
         x = canvas.value.width / 2;
         y = canvas.value.height - 30;
         paddleX = (canvas.value.width - paddleWidth) / 2;
+        dx = 3;
+        dy = -2;
       }
     }
 
@@ -256,8 +239,32 @@ onMounted(() => {
 
     x += dx;
     y += dy;
+  }
 
-    const brickGame = requestAnimationFrame(draw);
+  function drawScore() {
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#0095dd';
+    ctx.fillText(`Score : ${score}`, 15, 25);
+  }
+  function drawLives() {
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#0095DD';
+    ctx.fillText(`Lives: ${lives}`, canvas.value.width - 75, 25);
+  }
+
+  function updateCanvas() {
+    timer++;
+    ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+
+    drawBall();
+    drawBricks();
+    drawPaddle();
+
+    collisionDetection();
+    drawScore();
+    drawLives();
+
+    const brickGame = requestAnimationFrame(updateCanvas);
   }
 });
 </script>
