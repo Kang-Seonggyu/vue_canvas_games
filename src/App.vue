@@ -16,6 +16,7 @@
         <q-route-tab to="/DinoGame" label="Dino-Game" />
         <q-route-tab to="/BreakOutGame" label="BreakOut-Game" />
         <q-route-tab to="/MarioGame" label="Mario-Game" />
+        <q-route-tab to="/Gun3D" label="Gun3D" />
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
       </q-tabs>
     </q-header>

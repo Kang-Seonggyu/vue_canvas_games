@@ -21,6 +21,11 @@ const routes = [
     name: 'MarioGame',
     component: () => import('../components/MarioGame.vue'),
   },
+  {
+    path: '/Gun3D',
+    name: 'Gun3D',
+    component: () => import('../components/Gun3Dimension.vue'),
+  },
 ];
 
 const router = createRouter({
