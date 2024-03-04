@@ -6,13 +6,14 @@ import * as THREE from 'three';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const container = ref(null);
 
 const scene = shallowRef();
 const camera = shallowRef();
 const renderer = shallowRef();
-const position = { x: 150, y: 150, z: 150 };
+const orbit = shallowRef();
 const gunParts = {
   all: { path: 'all' },
   Slide: {
@@ -20,36 +21,42 @@ const gunParts = {
     posit: [5, -60, 6],
     rotate: [Math.PI, 0, 0],
     scale: [1, 1, 1],
+    controler: [20, 75, -20],
   },
   SlideCatch: {
     path: '/STL/Glock26_SlideCatch.stl',
     posit: [-93, 119, -4],
     rotate: [0, 0, 0],
     scale: [1, 1, 1],
+    controler: [102, -120, 0],
   },
   Barrel: {
     path: '/STL/Glock26_Barrel.stl',
     posit: [25, 127, 60],
     rotate: [0, Math.PI / 2, 0],
     scale: [1, 1, 1],
+    controler: [40, -112, -75],
   },
   Body: {
     path: '/STL/Glock26_Body.stl',
     posit: [0, 50, -10],
     rotate: [0, 0, 0],
     scale: [1, 1, 1],
+    controler: [-10, -35, 0],
   },
   Magazine: {
     path: '/STL/Glock26_Magazine.stl',
     posit: [-10, -105, 80],
     rotate: [Math.PI, 0, 0],
     scale: [1, 1, 1],
+    controler: [0, 120, 0],
   },
   Pin: {
     path: '/STL/Glock26_Pin.stl',
     posit: [0, 158, -5],
     rotate: [0, 0, 0],
     scale: [1, 1, 1],
+    controler: [60, -145, 4],
   },
 
   Small_Parts: {
@@ -57,19 +64,29 @@ const gunParts = {
     posit: [0, 50, -10],
     rotate: [-Math.PI / 2, 0, 0],
     scale: [1, 1, 1],
+    controler: [40, 4, 100],
   },
   Bullet: {
     path: '/STL/Glock26_9mmBullet.stl',
     posit: [55, -18, -3],
     rotate: [0, Math.PI / 2, 0],
+    controler: [0, 32, -13],
   },
   Shell: {
     path: '/STL/Glock26_Shell.stl',
     posit: [38, -18, -13],
     rotate: [0, Math.PI / 2, 0],
     scale: [1, 1, 1],
+    controler: [10, 32, -3],
   },
 };
+const panelValue = shallowRef({
+  positX: 150,
+  positY: 150,
+  positZ: 150,
+  gunParts: 'all',
+  ctrlType: 'translate',
+});
 
 function init() {
   scene.value = new THREE.Scene();
@@ -85,7 +102,11 @@ function init() {
     container.value.clientWidth,
     container.value.clientHeight
   );
-  camera.value.position.set(position.x, position.y, position.z);
+  camera.value.position.set(
+    panelValue.value.positX,
+    panelValue.value.positY,
+    panelValue.value.positX
+  );
   container.value.appendChild(renderer.value.domElement);
 
   // 바닥
@@ -117,9 +138,9 @@ function init() {
   scene.value.background = new THREE.Color(0xa0a0a0);
 
   /* 마우스 화면 컨트롤 */
-  const orbit = new OrbitControls(camera.value, renderer.value.domElement);
-  orbit.target.set(0, 1, 0);
-  orbit.update();
+  orbit.value = new OrbitControls(camera.value, renderer.value.domElement);
+  orbit.value.target.set(0, 1, 0);
+  orbit.value.update();
 }
 
 function clearScene() {
@@ -131,8 +152,12 @@ function clearScene() {
       child.material.dispose();
       scene.value.remove(child);
     }
+    if (child instanceof TransformControls) {
+      scene.value.remove(child);
+    }
   }
 }
+
 function allPartsRender() {
   Object.keys(gunParts).map((e, i) => (i === 0 ? '' : loadSTL(gunParts[e])));
 }
@@ -158,6 +183,7 @@ function loadSTL(obj) {
     const mesh = new THREE.Mesh(geometry, meshMaterial);
     const posit = obj.posit;
     const rotate = obj.rotate;
+    const controler = obj.controler;
 
     mesh.position.set(posit[0], posit[1], posit[2]);
     mesh.rotation.set(rotate[0], rotate[1], rotate[2]);
@@ -166,10 +192,31 @@ function loadSTL(obj) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
+    const control = new TransformControls(
+      camera.value,
+      renderer.value.domElement
+    );
+    control.addEventListener('change', render);
+    control.addEventListener('dragging-changed', function (event) {
+      orbit.value.enabled = !event.value;
+    });
+    control.position.set(controler[0], controler[1], controler[2]);
+    control.attach(mesh);
+    control.setMode(panelValue.value.ctrlType);
+    scene.value.add(control);
+
     scene.value.add(mesh);
   });
 }
-
+function ctrlTypeChange(e) {
+  const children = scene.value.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    if (child instanceof TransformControls) {
+      child.setMode(e);
+    }
+  }
+}
 function createPanel() {
   const panel = new GUI({
     container: document.getElementById('container'),
@@ -178,16 +225,15 @@ function createPanel() {
   });
 
   const folder1 = panel.addFolder('Camera Position');
-  folder1.add(position, 'x');
-  folder1.add(position, 'y');
-  folder1.add(position, 'z');
+  folder1.add(panelValue.value, 'positX', 0, 300).name('position X');
+  folder1.add(panelValue.value, 'positY', 0, 300).name('position Y');
+  folder1.add(panelValue.value, 'positZ', 0, 300).name('position Z');
   folder1.onChange((e) =>
-    camera.value.position.set(e.object.x, e.object.y, e.object.z)
+    camera.value.position.set(e.object.positX, e.object.positY, e.object.positZ)
   );
 
   const folder2 = panel.addFolder('Gun Part');
-  const obj = { part: 'all' };
-  folder2.add(obj, 'part', gunParts);
+  folder2.add(panelValue.value, 'gunParts', gunParts).name('Part');
   folder2.onChange((e) => {
     clearScene();
     if (e.value.path === 'all') {
@@ -197,15 +243,20 @@ function createPanel() {
     }
   });
 
-  const folder3 = panel.addFolder('General Speed');
-
-  const panelSettings = {
-    'modify time scale': 1.0,
-  };
+  const folder3 = panel.addFolder('Control Mode');
+  folder3
+    .add(panelValue.value, 'ctrlType', ['translate', 'rotate', 'scale'])
+    .name('타입')
+    .onChange((e) => ctrlTypeChange(e));
 }
 
 function animate() {
   requestAnimationFrame(animate);
+  orbit.value.update();
+  renderer.value.render(scene.value, camera.value);
+}
+
+function render() {
   renderer.value.render(scene.value, camera.value);
 }
 
@@ -222,6 +273,7 @@ function onWindowResize() {
 
 onMounted(() => {
   init();
+  render();
   animate();
   createPanel();
   allPartsRender();
