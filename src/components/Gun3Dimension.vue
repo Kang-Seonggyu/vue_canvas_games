@@ -10,6 +10,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const container = ref(null);
 
+const panel = shallowRef();
 const scene = shallowRef();
 const camera = shallowRef();
 const renderer = shallowRef();
@@ -85,6 +86,7 @@ const panelValue = shallowRef({
   positY: 150,
   positZ: 150,
   gunParts: 'all',
+  ctrlShow: true,
   ctrlType: 'translate',
 });
 
@@ -208,7 +210,37 @@ function loadSTL(obj) {
     scene.value.add(mesh);
   });
 }
+
+function ctrlDegree(e) {
+  const children = scene.value.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    if (child instanceof TransformControls) {
+      if (e) {
+        child.setTranslationSnap(100);
+        child.setRotationSnap(THREE.MathUtils.degToRad(15));
+        child.setScaleSnap(0.25);
+      } else {
+        child.setTranslationSnap(null);
+        child.setRotationSnap(THREE.MathUtils.degToRad(null));
+        child.setScaleSnap(null);
+      }
+    }
+  }
+}
+function ctrlShow(e) {
+  const children = scene.value.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    if (child instanceof TransformControls) {
+      child.showX = e;
+      child.showY = e;
+      child.showZ = e;
+    }
+  }
+}
 function ctrlTypeChange(e) {
+  panelValue.value.ctrlType = e;
   const children = scene.value.children;
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
@@ -217,6 +249,16 @@ function ctrlTypeChange(e) {
     }
   }
 }
+function ctrlReset() {
+  const children = scene.value.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    if (child instanceof TransformControls) {
+      child.reset();
+    }
+  }
+}
+
 function createPanel() {
   const panel = new GUI({
     container: document.getElementById('container'),
@@ -245,15 +287,21 @@ function createPanel() {
 
   const folder3 = panel.addFolder('Control Mode');
   folder3
+    .add(panelValue.value, 'ctrlShow')
+    .name('표시')
+    .onChange((e) => ctrlShow(e));
+  folder3
     .add(panelValue.value, 'ctrlType', ['translate', 'rotate', 'scale'])
     .name('타입')
     .onChange((e) => ctrlTypeChange(e));
+
+  return panel;
 }
 
 function animate() {
   requestAnimationFrame(animate);
   orbit.value.update();
-  renderer.value.render(scene.value, camera.value);
+  render();
 }
 
 function render() {
@@ -275,8 +323,49 @@ onMounted(() => {
   init();
   render();
   animate();
-  createPanel();
+  panel.value = createPanel();
   allPartsRender();
+});
+
+function updateGuiCtrlType() {
+  const guiCtrlType = panel.value.children[2].children[1];
+  if (guiCtrlType) {
+    guiCtrlType.setValue(panelValue.value.ctrlType);
+  }
+}
+
+window.addEventListener('keydown', function (event) {
+  switch (event.keyCode) {
+    case 16: // Shift
+      ctrlDegree(true);
+      break;
+
+    case 87: // W
+      ctrlTypeChange('translate');
+      updateGuiCtrlType();
+      break;
+
+    case 69: // E
+      ctrlTypeChange('rotate');
+      updateGuiCtrlType();
+      break;
+
+    case 82: // R
+      ctrlTypeChange('scale');
+      updateGuiCtrlType();
+      break;
+
+    case 27: // Esc
+      ctrlReset();
+      break;
+  }
+});
+window.addEventListener('keyup', function (event) {
+  switch (event.keyCode) {
+    case 16: // Shift
+      ctrlDegree(false);
+      break;
+  }
 });
 </script>
 
