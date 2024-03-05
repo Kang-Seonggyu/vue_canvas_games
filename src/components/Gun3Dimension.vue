@@ -1,4 +1,15 @@
-<template><div ref="container" id="container"></div></template>
+<template>
+  <div ref="container" id="container">
+    <p>
+      <span>"W" translate</span><span> "E" rotate</span>
+      <span> "R" scale</span>"Shift" snap to grid
+    </p>
+    <p>
+      <span>"X" toggle X </span><span> "Y" toggle Y</span>
+      "Z" toggle Z
+    </p>
+  </div>
+</template>
 
 <script setup>
 import { ref, onMounted, shallowRef } from 'vue';
@@ -211,50 +222,49 @@ function loadSTL(obj) {
   });
 }
 
-function ctrlDegree(e) {
+function onTransformCtrl(action, param) {
   const children = scene.value.children;
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
     if (child instanceof TransformControls) {
-      if (e) {
-        child.setTranslationSnap(100);
-        child.setRotationSnap(THREE.MathUtils.degToRad(15));
-        child.setScaleSnap(0.25);
-      } else {
-        child.setTranslationSnap(null);
-        child.setRotationSnap(THREE.MathUtils.degToRad(null));
-        child.setScaleSnap(null);
+      switch (action) {
+        case 'degree':
+          if (param) {
+            child.setTranslationSnap(100);
+            child.setRotationSnap(THREE.MathUtils.degToRad(15));
+            child.setScaleSnap(0.25);
+          } else {
+            child.setTranslationSnap(null);
+            child.setRotationSnap(THREE.MathUtils.degToRad(null));
+            child.setScaleSnap(null);
+          }
+          break;
+
+        case 'show':
+          child.showX = param;
+          child.showY = param;
+          child.showZ = param;
+          break;
+
+        case 'showX':
+          child.showX = !child.showX;
+          break;
+        case 'showY':
+          child.showY = !child.showY;
+          break;
+        case 'showZ':
+          child.showZ = !child.showZ;
+          break;
+
+        case 'type':
+          panelValue.value.ctrlType = param;
+          child.setMode(param);
+          break;
+
+        case 'reset':
+          child.reset();
+          break;
       }
-    }
-  }
-}
-function ctrlShow(e) {
-  const children = scene.value.children;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    if (child instanceof TransformControls) {
-      child.showX = e;
-      child.showY = e;
-      child.showZ = e;
-    }
-  }
-}
-function ctrlTypeChange(e) {
-  panelValue.value.ctrlType = e;
-  const children = scene.value.children;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    if (child instanceof TransformControls) {
-      child.setMode(e);
-    }
-  }
-}
-function ctrlReset() {
-  const children = scene.value.children;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    if (child instanceof TransformControls) {
-      child.reset();
     }
   }
 }
@@ -289,11 +299,11 @@ function createPanel() {
   folder3
     .add(panelValue.value, 'ctrlShow')
     .name('표시')
-    .onChange((e) => ctrlShow(e));
+    .onChange((e) => onTransformCtrl('show', e));
   folder3
     .add(panelValue.value, 'ctrlType', ['translate', 'rotate', 'scale'])
     .name('타입')
-    .onChange((e) => ctrlTypeChange(e));
+    .onChange((e) => onTransformCtrl('type', e));
 
   return panel;
 }
@@ -337,33 +347,45 @@ function updateGuiCtrlType() {
 window.addEventListener('keydown', function (event) {
   switch (event.keyCode) {
     case 16: // Shift
-      ctrlDegree(true);
+      onTransformCtrl('degree', true);
       break;
 
     case 87: // W
-      ctrlTypeChange('translate');
+      onTransformCtrl('type', 'translate');
       updateGuiCtrlType();
       break;
 
     case 69: // E
-      ctrlTypeChange('rotate');
+      onTransformCtrl('type', 'rotate');
       updateGuiCtrlType();
       break;
 
     case 82: // R
-      ctrlTypeChange('scale');
+      onTransformCtrl('type', 'scale');
       updateGuiCtrlType();
       break;
 
+    case 88: // X
+      onTransformCtrl('showX');
+      break;
+
+    case 89: // Y
+      onTransformCtrl('showY');
+      break;
+
+    case 90: // Z
+      onTransformCtrl('showZ');
+      break;
+
     case 27: // Esc
-      ctrlReset();
+      onTransformCtrl('reset');
       break;
   }
 });
 window.addEventListener('keyup', function (event) {
   switch (event.keyCode) {
     case 16: // Shift
-      ctrlDegree(false);
+      onTransformCtrl('degree', false);
       break;
   }
 });
@@ -371,12 +393,28 @@ window.addEventListener('keyup', function (event) {
 
 <style scoped>
 #container {
-  margin: 0 auto;
+  margin: 30px auto 0;
   position: relative;
   width: 90%;
   height: 80%;
   min-height: 600px;
   border: 1px solid black;
+}
+#container p {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+#container p + p {
+  margin-top: 20px;
+}
+#container p span::after {
+  margin-left: 10px;
+  margin-right: 10px;
+  content: '|';
 }
 </style>
 <style>
