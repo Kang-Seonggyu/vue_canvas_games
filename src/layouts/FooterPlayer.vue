@@ -21,7 +21,12 @@
           <li
             v-for="(music, idx) in props.list"
             :key="`${music.author}-${music.name}`"
+            :class="{ current: idx === $props.playerStat.track }"
+            @click.stop="$emit('onClickMusic', idx)"
           >
+            <div class="img">
+              <img :src="music.albumImgURL" />
+            </div>
             <p>{{ music.author }} - {{ music.name }}</p>
           </li>
         </ul>
@@ -35,6 +40,7 @@ import { ref, watch } from 'vue';
 const props = defineProps({
   audio: { type: Object },
   show: { type: Boolean, required: true },
+  playerStat: { type: Object, required: true },
   list: { type: Array },
 });
 
@@ -59,7 +65,7 @@ watch(
 );
 
 const createBars = () => {
-  const BarNum = 65;
+  const BarNum = 80;
 
   const ctx = new AudioContext();
 
@@ -112,6 +118,69 @@ ul {
   height: 150px;
   list-style: none;
   overflow: auto;
+}
+ul::-webkit-scrollbar {
+  width: 10px;
+}
+ul::-webkit-scrollbar-thumb {
+  background-color: #2f3542;
+  border-radius: 10px;
+}
+ul::-webkit-scrollbar-track {
+  background-color: grey;
+  border-radius: 10px;
+  box-shadow: inset 0px 0px 5px white;
+}
+ul li {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  margin: 4px;
+  cursor: pointer;
+}
+ul li.current .img::after {
+  position: absolute;
+  display: block;
+  content: '▶';
+  text-align: center;
+  line-height: 32px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: black;
+  opacity: 0.8;
+}
+ul li img {
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+ul li .img {
+  position: relative;
+  height: 32px;
+}
+ul li:hover .img::after {
+  position: absolute;
+  display: block;
+  content: '▶';
+  text-align: center;
+  line-height: 32px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: black;
+  opacity: 0.8;
+}
+ul li p {
+  position: relative;
+  width: 200px;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 </style>
 
