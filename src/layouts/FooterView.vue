@@ -5,6 +5,7 @@
       :src="musicList[musicPlayer.track].src"
       controls
       @ended="playEndListener"
+      @loadeddata="(e) => (musicPlayer.duration = e.target.duration)"
     ></audio>
     <q-slider
       v-model="playTime"
@@ -219,13 +220,10 @@ const playEndListener = (e) => {
 watch(
   () => musicPlayer.status,
   (x) => {
-    console.log('status변경 :', x);
     if (x === 'play') {
       audio.value.play();
-      musicPlayer.duration = audio.value.duration;
       audio.value.onloadeddata = () => {
         audio.value.play();
-        musicPlayer.duration = audio.value.duration;
       };
       audio.value.addEventListener('timeupdate', playListener);
     } else if (x !== 'play') {
@@ -256,5 +254,8 @@ audio {
 }
 .py-0:hover .q-slider__thumb-shape {
   transform: scale(3);
+}
+.py-0:active .q-slider__thumb-shape {
+  transform: scale(5);
 }
 </style>
