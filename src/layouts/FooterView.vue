@@ -86,15 +86,14 @@
         color="brown-5"
         :icon="mdiMusicBox"
         @click="playerShow = !playerShow"
-      >
-        <FooterPlayer
-          :audio="audio"
-          :show="playerShow"
-          :playerStat="musicPlayer"
-          :list="musicList"
-          @onClickMusic="onClickMusic"
-        />
-      </q-btn>
+      />
+      <FooterPlayer
+        :audio="audio"
+        :show="playerShow"
+        :playerStat="musicPlayer"
+        :list="musicList"
+        @onClickMusic="onClickMusic"
+      />
     </q-toolbar>
   </q-footer>
 </template>

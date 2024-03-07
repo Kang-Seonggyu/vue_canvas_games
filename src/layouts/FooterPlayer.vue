@@ -1,38 +1,33 @@
 <template>
-  <q-menu
-    ref="menu"
-    transition-show="rotate"
-    transition-hide="rotate"
-    no-parent-event
-    persistent
-    class="player"
-    :offset="[0, 15]"
-    v-model="display"
-    :class="props.show ? 'show' : 'hide'"
-  >
-    <div class="visualizer-container" ref="visualizerContainer"></div>
-    <div class="row no-wrap q-pa-md bg-dark text-white">
-      <div class="column" style="min-width: 140px">Setting</div>
+  <Transition name="mpBox">
+    <div ref="menu" class="player" v-show="props.show">
+      <div class="visualizer-container" ref="visualizerContainer"></div>
+      <div class="row no-wrap q-pa-md bg-dark text-white">
+        <div class="column" style="min-width: 140px">
+          <span class="setH1">SETTING</span>
+          <div></div>
+        </div>
 
-      <q-separator vertical inset class="q-mx-lg" />
+        <q-separator vertical inset class="q-mx-lg" />
 
-      <div class="column items-center">
-        <ul>
-          <li
-            v-for="(music, idx) in props.list"
-            :key="`${music.author}-${music.name}`"
-            :class="{ current: idx === $props.playerStat.track }"
-            @click.stop="$emit('onClickMusic', idx)"
-          >
-            <div class="img">
-              <img :src="music.albumImgURL" />
-            </div>
-            <p>{{ music.author }} - {{ music.name }}</p>
-          </li>
-        </ul>
+        <div class="column items-center">
+          <ul>
+            <li
+              v-for="(music, idx) in props.list"
+              :key="`${music.author}-${music.name}`"
+              :class="{ current: idx === $props.playerStat.track }"
+              @click.stop="$emit('onClickMusic', idx)"
+            >
+              <div class="img">
+                <img :src="music.albumImgURL" />
+              </div>
+              <p>{{ music.author }} - {{ music.name }}</p>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </q-menu>
+  </Transition>
 </template>
 
 <script setup>
@@ -44,7 +39,6 @@ const props = defineProps({
   list: { type: Array },
 });
 
-const display = true;
 const makeBars = ref(false);
 const menu = ref();
 
@@ -112,6 +106,20 @@ const createBars = () => {
 </script>
 
 <style scoped>
+.player {
+  position: absolute;
+  right: 5px;
+  bottom: 58px;
+}
+.mpBox-enter-active,
+.mpBox-leave-active {
+  transition: all 0.5s ease-in-out;
+}
+.mpBox-enter-from,
+.mpBox-leave-to {
+  opacity: 0;
+}
+
 ul {
   padding: 0;
   margin: 0;
@@ -182,19 +190,13 @@ ul li p {
   white-space: nowrap;
   overflow: hidden;
 }
+.setH1 {
+  font-size: 1rem;
+  font-weight: 600;
+}
 </style>
 
 <style>
-.q-menu.player {
-  position: relative;
-  transition: opacity 500ms ease-in-out;
-}
-.q-menu.player.show {
-  opacity: 1;
-}
-.q-menu.player.hide {
-  opacity: 0;
-}
 .q-toolbar__title {
   display: flex;
 }
