@@ -1,7 +1,21 @@
 <template>
-  <q-footer elevated class="bg-dark text-white">
-    <audio ref="audio" :src="musicList[musicPlayer.track].src" controls></audio>
-    <q-linear-progress :value="musicPlayer.playRate" color="pink" />
+  <q-footer elevated class="bg-dark column text-white">
+    <audio
+      ref="audio"
+      :src="musicList[musicPlayer.track].src"
+      controls
+      @ended="playEndListener"
+    ></audio>
+    <q-slider
+      v-model="playTime"
+      color="pink"
+      class="py-0"
+      :min="0"
+      :max="musicPlayer.duration"
+      :step="1"
+      thumb-size="6px"
+      @change="onChangeTime"
+    />
     <q-toolbar>
       <q-toolbar-title>
         <q-btn flat round size="sm" icon="fast_rewind" @click="prevTrack" />
@@ -129,13 +143,14 @@ const musicList = [
 ];
 
 const musicPlayer = reactive({
-  status: 'stop',
+  status: 'pause', // ['play','pause']
   volume: 100,
   track: 0,
-  playRate: 0,
-  replay: 'no-replay',
+  replay: 'no-replay', // ['no-replay','all','one']
   shuffle: false,
+  duration: 0,
 });
+const playTime = ref(0);
 
 /** 좌측 영역 */
 const prevTrack = () => {
@@ -144,7 +159,7 @@ const prevTrack = () => {
   } else {
     musicPlayer.track--;
   }
-  musicPlayer.playRate = 0;
+  playTime.value = 0;
 };
 const startToggle = () => {
   if (musicPlayer.status !== 'play') {
@@ -159,22 +174,15 @@ const nextTrack = () => {
   } else {
     musicPlayer.track++;
   }
-  musicPlayer.playRate = 0;
-};
-
-const playListener = (e) => {
-  if (e.target) {
-    const mp = e.target;
-    musicPlayer.playRate = Number((mp.currentTime / mp.duration).toFixed(3));
-  }
+  playTime.value = 0;
 };
 
 /** 우측 영역 */
 const onClickReplay = () => {
-  if (musicPlayer.replay === 'all') {
-    musicPlayer.replay = 'one';
-  } else if (musicPlayer.replay === 'one') {
+  if (musicPlayer.replay === 'one') {
     musicPlayer.replay = 'no-replay';
+  } else if (musicPlayer.replay === 'all') {
+    musicPlayer.replay = 'one';
   } else {
     musicPlayer.replay = 'all';
   }
@@ -187,20 +195,52 @@ const onClickMusic = (idx) => {
   musicPlayer.status = 'play';
 };
 
-watch(musicPlayer, (x) => {
-  console.log(x);
-  if (x.status === 'play') {
+/** 이벤트 영역 */
+const playListener = (e) => {
+  playTime.value = e.target?.currentTime;
+};
+const onChangeTime = (e) => {
+  audio.value.currentTime = e;
+};
+const playEndListener = (e) => {
+  if (musicPlayer.replay === 'one') {
+    audio.value.currentTime = 0;
     audio.value.play();
-    audio.value.onloadeddata = () => {
-      console.dir(audio.value);
-      audio.value.play();
-    };
-    audio.value.addEventListener('timeupdate', playListener);
-  } else if (x.status !== 'play') {
-    audio.value.pause();
-    audio.value.removeEventListener('timeupdate', playListener);
+    musicPlayer.status = 'play';
+  } else if (
+    musicPlayer.replay === 'no-replay' &&
+    musicPlayer.track === musicList.length - 1
+  ) {
+    musicPlayer.status = 'pause';
+  } else {
+    nextTrack();
   }
-});
+};
+
+watch(
+  () => musicPlayer.status,
+  (x) => {
+    console.log('status변경 :', x);
+    if (x === 'play') {
+      audio.value.play();
+      musicPlayer.duration = audio.value.duration;
+      audio.value.onloadeddata = () => {
+        audio.value.play();
+        musicPlayer.duration = audio.value.duration;
+      };
+      audio.value.addEventListener('timeupdate', playListener);
+    } else if (x !== 'play') {
+      audio.value.pause();
+      audio.value.removeEventListener('timeupdate', playListener);
+    }
+  }
+);
+watch(
+  () => musicPlayer.volume,
+  (x) => {
+    audio.value.volume = x / 100;
+  }
+);
 </script>
 
 <style scoped>
@@ -209,5 +249,13 @@ audio {
 }
 .musicInfo {
   font-size: 12px;
+}
+</style>
+<style>
+.py-0 .q-slider__track-container {
+  padding: 0 !important;
+}
+.py-0:hover .q-slider__thumb-shape {
+  transform: scale(3);
 }
 </style>
