@@ -5,10 +5,72 @@
       <div class="row no-wrap q-pa-md bg-dark text-white">
         <div class="column" style="min-width: 140px">
           <span class="setH1">SETTING</span>
-          <div></div>
+          <div class="equalizer">
+            <p class="controler">
+              <q-slider
+                v-model="equalizer.high"
+                :min="-40"
+                :max="40"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>High</span>
+            </p>
+            <p class="controler">
+              <q-slider
+                v-model="equalizer.mid1"
+                :min="-40"
+                :max="40"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>Mid1</span>
+            </p>
+            <p class="controler">
+              <q-slider
+                v-model="equalizer.mid2"
+                :min="-40"
+                :max="40"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>Mid2</span>
+            </p>
+            <p class="controler">
+              <q-slider
+                v-model="equalizer.low"
+                :min="-40"
+                :max="40"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>Low</span>
+            </p>
+            <!-- <q-slider
+                v-model="equalizer.high"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>freq</span>
+            </p>
+            <p class="controler">
+              <q-slider
+                v-model="equalizer.mid1"
+                vertical
+                reverse
+                track-color="grey-8"
+              />
+              <span>gain</span>
+            </p> -->
+          </div>
         </div>
 
-        <q-separator vertical inset class="q-mx-lg" />
+        <q-separator vertical inset class="q-mx-sm" />
 
         <div class="column items-center">
           <ul>
@@ -31,20 +93,34 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, reactive } from 'vue';
 const props = defineProps({
   audio: { type: Object },
   show: { type: Boolean, required: true },
   playerStat: { type: Object, required: true },
   list: { type: Array },
 });
+defineEmits(['onClickMusic']);
 
 const makeBars = ref(false);
 const menu = ref();
 
+const visualizerContainer = ref();
+const ctx = ref();
+
 const audioSource = ref();
 
-const visualizerContainer = ref();
+const equalizer = reactive({
+  low: 0,
+  mid1: 0,
+  mid2: 0,
+  high: 0,
+});
+const highPassFilter = ref();
+const lowShelfFilter = ref();
+const midFilter = ref();
+const highShelfFilter = ref();
+const testFilter = ref();
 
 watch(
   () => props.show,
@@ -61,17 +137,40 @@ watch(
 const createBars = () => {
   const BarNum = 80;
 
-  const ctx = new AudioContext();
+  ctx.value = new AudioContext();
 
   if (audioSource.value) {
     // 이미 연결된 MediaElementSourceNode가 있다면 연결 해제
     audioSource.value.disconnect();
   }
-  audioSource.value = ctx.createMediaElementSource(props.audio);
-  const analayzer = ctx.createAnalyser();
 
+  // testFilter.value = ctx.value.createBiquadFilter();
+  // testFilter.value.type = 'peaking'; // Define the type of filter (peaking for equalizer)
+  // testFilter.value.frequency.value = 1000; // Example initial frequency
+  // testFilter.value.gain.value = 0; // Initial gain value
+
+  highPassFilter.value = eqFilter(ctx.value, 'highpass', 80, equalizer.low);
+  lowShelfFilter.value = eqFilter(ctx.value, 'lowshelf', 90, equalizer.mid1);
+  midFilter.value = eqFilter(ctx.value, 'peaking', 10000, equalizer.mid2);
+  highShelfFilter.value = eqFilter(
+    ctx.value,
+    'highshelf',
+    10000,
+    equalizer.high
+  );
+
+  audioSource.value = ctx.value.createMediaElementSource(props.audio);
+  const analayzer = ctx.value.createAnalyser();
+
+  // audioSource.value.connect(testFilter.value);
+  // testFilter.value.connect(ctx.value.destination);
   audioSource.value.connect(analayzer);
-  audioSource.value.connect(ctx.destination);
+  audioSource.value.connect(ctx.value.destination);
+  audioSource.value.connect(highPassFilter.value);
+  highPassFilter.value.connect(lowShelfFilter.value);
+  lowShelfFilter.value.connect(highShelfFilter.value);
+  highShelfFilter.value.connect(midFilter.value);
+  midFilter.value.connect(ctx.value.destination);
 
   const frequencyData = new Uint8Array(analayzer.frequencyBinCount);
   analayzer.getByteFrequencyData(frequencyData);
@@ -103,6 +202,34 @@ const createBars = () => {
 
   renderFrame();
 };
+
+function eqFilter(ctx, type, freq, gain, q) {
+  const filter = ctx.createBiquadFilter();
+  filter.type = type;
+  filter.frequency.value = freq;
+  if (gain) {
+    filter.gain.value = gain;
+  }
+  if (q) {
+    filter.Q.value = q;
+  }
+  return filter;
+}
+
+watch(
+  [
+    () => equalizer.low,
+    () => equalizer.mid1,
+    () => equalizer.mid2,
+    () => equalizer.high,
+  ],
+  ([low, mid1, mid2, high]) => {
+    highShelfFilter.value.gain.value = high;
+    midFilter.value.gain.value = mid1;
+    highPassFilter.value.gain.value = mid2;
+    lowShelfFilter.value.gain.value = low;
+  }
+);
 </script>
 
 <style scoped>
@@ -113,13 +240,33 @@ const createBars = () => {
 }
 .mpBox-enter-active,
 .mpBox-leave-active {
-  transition: all 0.5s ease-in-out;
+  transition: all 0.25s ease-in-out;
 }
 .mpBox-enter-from,
 .mpBox-leave-to {
   opacity: 0;
 }
-
+.setH1 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.equalizer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 125px;
+}
+.equalizer p.controler {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+.equalizer p.controler span {
+  margin-top: 5px;
+}
 ul {
   padding: 0;
   margin: 0;
@@ -190,13 +337,12 @@ ul li p {
   white-space: nowrap;
   overflow: hidden;
 }
-.setH1 {
-  font-size: 1rem;
-  font-weight: 600;
-}
 </style>
 
 <style>
+.q-slider--v {
+  height: 100px !important;
+}
 .q-toolbar__title {
   display: flex;
 }
