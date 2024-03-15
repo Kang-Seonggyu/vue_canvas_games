@@ -4,69 +4,19 @@
       <div class="visualizer-container" ref="visualizerContainer"></div>
       <div class="row no-wrap q-pa-md bg-dark text-white">
         <div class="column" style="min-width: 140px">
-          <span class="setH1">SETTING</span>
+          <span class="setH1"> SETTING </span>
           <div class="equalizer">
-            <p class="controler">
+            <p class="controler" v-for="i in ['high', 'mid1', 'mid2', 'low']">
               <q-slider
-                v-model="equalizer.high"
+                v-model="equalizer[i]"
                 :min="-40"
                 :max="40"
                 vertical
                 reverse
                 track-color="grey-8"
               />
-              <span>High</span>
+              <span class="setH2">{{ i }}</span>
             </p>
-            <p class="controler">
-              <q-slider
-                v-model="equalizer.mid1"
-                :min="-40"
-                :max="40"
-                vertical
-                reverse
-                track-color="grey-8"
-              />
-              <span>Mid1</span>
-            </p>
-            <p class="controler">
-              <q-slider
-                v-model="equalizer.mid2"
-                :min="-40"
-                :max="40"
-                vertical
-                reverse
-                track-color="grey-8"
-              />
-              <span>Mid2</span>
-            </p>
-            <p class="controler">
-              <q-slider
-                v-model="equalizer.low"
-                :min="-40"
-                :max="40"
-                vertical
-                reverse
-                track-color="grey-8"
-              />
-              <span>Low</span>
-            </p>
-            <!-- <q-slider
-                v-model="equalizer.high"
-                vertical
-                reverse
-                track-color="grey-8"
-              />
-              <span>freq</span>
-            </p>
-            <p class="controler">
-              <q-slider
-                v-model="equalizer.mid1"
-                vertical
-                reverse
-                track-color="grey-8"
-              />
-              <span>gain</span>
-            </p> -->
           </div>
         </div>
 
@@ -120,7 +70,6 @@ const highPassFilter = ref();
 const lowShelfFilter = ref();
 const midFilter = ref();
 const highShelfFilter = ref();
-const testFilter = ref();
 
 watch(
   () => props.show,
@@ -144,11 +93,6 @@ const createBars = () => {
     audioSource.value.disconnect();
   }
 
-  // testFilter.value = ctx.value.createBiquadFilter();
-  // testFilter.value.type = 'peaking'; // Define the type of filter (peaking for equalizer)
-  // testFilter.value.frequency.value = 1000; // Example initial frequency
-  // testFilter.value.gain.value = 0; // Initial gain value
-
   highPassFilter.value = eqFilter(ctx.value, 'highpass', 80, equalizer.low);
   lowShelfFilter.value = eqFilter(ctx.value, 'lowshelf', 90, equalizer.mid1);
   midFilter.value = eqFilter(ctx.value, 'peaking', 10000, equalizer.mid2);
@@ -162,8 +106,6 @@ const createBars = () => {
   audioSource.value = ctx.value.createMediaElementSource(props.audio);
   const analayzer = ctx.value.createAnalyser();
 
-  // audioSource.value.connect(testFilter.value);
-  // testFilter.value.connect(ctx.value.destination);
   audioSource.value.connect(analayzer);
   audioSource.value.connect(ctx.value.destination);
   audioSource.value.connect(highPassFilter.value);
@@ -250,6 +192,12 @@ watch(
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 8px;
+}
+.setH2 {
+  font-size: 12px;
+}
+.setH2::first-letter {
+  text-transform: uppercase;
 }
 .equalizer {
   display: flex;
